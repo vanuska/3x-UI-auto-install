@@ -74,5 +74,5 @@ docker logs НОМЕРPORTAINERа который скопировали
 ```
 
 ## Примечание: стек 3x-ui создан с ограниченным через Portainer.io контролем. 
-<br>Для полного управления через Portainer удалите стек и добавьте заново через интерфейс Portainer, скопировав содержимое /opt/stacks/3x-ui/docker-compose.yml в Stacks. 
+<br>Для полного управления через Portainer удалите стек через Container и добавьте его заново через интерфейс Portainer - Stacks, скопировав в него содержимое из /opt/stacks/3x-ui/docker-compose.yml. 
 <br>То же самое и для Watchtower.
