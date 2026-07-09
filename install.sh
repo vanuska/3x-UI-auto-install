@@ -475,7 +475,7 @@ echo "x-ui"
 echo "Пункты меню:" 
 echo "6. Reset Username & Password"
 echo "7. Reset Web Base Path"                       
-echo "9. Change port"
+echo "10. Change port"
 echo
 echo "3x-ui:"
 echo "Первый раз заходим но http и IP"
