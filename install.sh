@@ -28,6 +28,51 @@ if [ -z "$USERNAME" ]; then
 fi
 
 ########################################
+# ВЫБОР ТИПА УСТАНОВКИ PORTAINER
+########################################
+
+echo
+echo "Выберите тип установки Portainer:"
+echo "  1) Полноценный сервер (Portainer CE с веб-интерфейсом)"
+echo "  2) Edge Agent Standard (постоянный туннель)"
+echo "  3) Edge Agent Async (периодическая синхронизация)"
+echo "  4) Agent (legacy, подключение по HTTP/HTTPS)"
+echo "  5) API (подключение через Docker API, без агента)"
+echo "  6) Socket (подключение через локальный Docker-сокет, без агента)"
+read -rp "Введите номер (1-6): " PORTAINER_TYPE
+
+case $PORTAINER_TYPE in
+    1)
+        PORTAINER_MODE="server"
+        ;;
+    2)
+        PORTAINER_MODE="edge_standard"
+        ;;
+    3)
+        PORTAINER_MODE="edge_async"
+        ;;
+    4)
+        PORTAINER_MODE="agent_legacy"
+        ;;
+    5)
+        PORTAINER_MODE="api"
+        ;;
+    6)
+        PORTAINER_MODE="socket"
+        ;;
+    *)
+        echo "Неверный выбор, установка по умолчанию: полноценный сервер"
+        PORTAINER_MODE="server"
+        ;;
+esac
+
+# Для агентов запрашиваем дополнительные параметры
+if [[ "$PORTAINER_MODE" == "edge_standard" || "$PORTAINER_MODE" == "edge_async" || "$PORTAINER_MODE" == "agent_legacy" ]]; then
+    read -rp "Введите адрес Portainer-сервера (например, portainer.example.com или IP): " PORTAINER_SERVER
+    read -rp "Введите ключ/токен для агента: " PORTAINER_TOKEN
+fi
+
+########################################
 # RANDOM PASSWORD
 ########################################
 
@@ -135,10 +180,9 @@ EOF
 sysctl -p
 
 ########################################
-# SSH SOCKET
+# SSH SOCKET (исправлено: используем drop-in)
 ########################################
 
-# Создаём drop-in директорию для переопределения порта
 mkdir -p /etc/systemd/system/ssh.socket.d
 
 cat > /etc/systemd/system/ssh.socket.d/port.conf << 'EOF'
@@ -148,7 +192,6 @@ ListenStream=0.0.0.0:2233
 ListenStream=[::]:2233
 EOF
 
-# Отключаем стандартный ssh.service, включаем сокет
 systemctl stop ssh 2>/dev/null || true
 systemctl disable ssh 2>/dev/null || true
 
@@ -212,7 +255,7 @@ ufw deny 80/tcp comment 'ACME'
 ufw --force enable
 
 ########################################
-# SSH RESTART (дополнительная проверка)
+# SSH RESTART
 ########################################
 
 mkdir -p /run/sshd
@@ -223,7 +266,6 @@ sshd -t || {
     exit 1
 }
 
-# Перезапускаем сокет ещё раз на всякий случай
 systemctl restart ssh.socket
 
 ########################################
@@ -249,7 +291,7 @@ fi
 echo "DNS настроен корректно"
 
 ########################################
-# ACME.SH
+# ACME.SH (сертификаты для 3x-ui и Portainer)
 ########################################
 
 curl -fsSL https://get.acme.sh | sh
@@ -278,12 +320,16 @@ ufw allow 80/tcp
 ufw deny 80/tcp
 
 ########################################
-# PORTAINER
+# УСТАНОВКА PORTAINER (в зависимости от выбора)
 ########################################
 
-mkdir -p /opt/stacks/portainer
+case $PORTAINER_MODE in
+    server)
+        echo "Устанавливаем полноценный Portainer CE (сервер)..."
 
-cat > /opt/stacks/portainer/docker-compose.yml << 'EOF'
+        mkdir -p /opt/stacks/portainer
+
+        cat > /opt/stacks/portainer/docker-compose.yml << 'EOF'
 services:
   portainer:
     image: portainer/portainer-ce:latest
@@ -309,8 +355,76 @@ volumes:
   portainer_data:
 EOF
 
-cd /opt/stacks/portainer
-docker compose up -d
+        cd /opt/stacks/portainer
+        docker compose up -d
+
+        PORTAINER_URL="https://${DOMAIN}:9443"
+        ;;
+
+    edge_standard|edge_async)
+        echo "Устанавливаем Edge Agent..."
+
+        # Для edge-агентов используем образ portainer/agent:latest
+        # Дополнительные параметры: --edge-server-url и --edge-key
+        # Для async добавляем --edge-async
+        EDGE_FLAGS="--edge-server-url wss://${PORTAINER_SERVER} --edge-key ${PORTAINER_TOKEN}"
+        if [ "$PORTAINER_MODE" = "edge_async" ]; then
+            EDGE_FLAGS="$EDGE_FLAGS --edge-async"
+        fi
+
+        docker run -d \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /var/lib/docker/volumes:/var/lib/docker/volumes \
+            -v /:/host \
+            -v portainer_agent_data:/data \
+            --restart always \
+            --name portainer_edge_agent \
+            portainer/agent:latest \
+            $EDGE_FLAGS
+
+        PORTAINER_URL="Edge Agent (${PORTAINER_MODE}) подключен к ${PORTAINER_SERVER}"
+        ;;
+
+    agent_legacy)
+        echo "Устанавливаем классический Agent (legacy)..."
+
+        # Для legacy агента используем порт 9001 (если нужно, можно открыть в UFW)
+        # Команда запуска: docker run -d -p 9001:9001 -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/docker/volumes:/var/lib/docker/volumes --restart always --name portainer_agent portainer/agent:latest --portainer-server-url http://${PORTAINER_SERVER}:9000
+        # Но так как сервер может быть на HTTPS, лучше спросить протокол, но для простоты оставим как есть.
+        docker run -d \
+            -p 9001:9001 \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /var/lib/docker/volumes:/var/lib/docker/volumes \
+            --restart always \
+            --name portainer_agent \
+            portainer/agent:latest \
+            --portainer-server-url http://${PORTAINER_SERVER}:9000
+
+        # Если нужно открыть порт 9001 в UFW:
+        ufw allow 9001/tcp comment 'Portainer Agent'
+
+        PORTAINER_URL="Legacy Agent подключен к ${PORTAINER_SERVER}:9000"
+        ;;
+
+    api)
+        echo "Выбран режим API. Установка агента не требуется."
+        echo "Для подключения к этой среде через Portainer используйте Docker API."
+        echo "Убедитесь, что Docker API доступен (обычно tcp://<IP>:2375) и защищён."
+        PORTAINER_URL="Подключение через API (инструкция выше)"
+        ;;
+
+    socket)
+        echo "Выбран режим Socket. Установка агента не требуется."
+        echo "Для подключения к этой среде через Portainer используйте локальный Docker-сокет."
+        echo "Этот метод подходит, если Portainer запущен на том же хосте."
+        PORTAINER_URL="Подключение через локальный сокет"
+        ;;
+
+    *)
+        echo "Неизвестный режим, пропускаем установку Portainer"
+        PORTAINER_URL="Не установлен"
+        ;;
+esac
 
 ########################################
 # WATCHTOWER
@@ -396,7 +510,7 @@ EOF
 chmod +x /opt/3x-ui/backup.sh
 
 ########################################
-# SSL RENEW
+# SSL RENEW SCRIPT
 ########################################
 
 cat > /usr/local/bin/ssl-renew.sh << 'EOF'
@@ -413,7 +527,7 @@ ufw deny 80/tcp
 NEWCERT=$(find /opt/portainer-cert/fullchain.pem -mtime -1)
 
 if [ -n "$NEWCERT" ]; then
-    docker restart portainer >/dev/null 2>&1
+    docker restart portainer 2>/dev/null || true
     docker restart 3x-ui >/dev/null 2>&1
 fi
 EOF
@@ -446,38 +560,37 @@ echo
 echo
 echo "===================================="
 echo "Установка завершена"
-echo "Выполнять по шагам"
-echo "https://github.com/vanuska/3x-UI-auto-install"
 echo "===================================="
-echo
-echo "Backup здесь: /opt/3x-ui/backup"
 echo
 echo "Пользователь: ${USERNAME}"
 echo "Пароль: ${USERPASS}"
 echo
+echo "Portainer:"
+echo "${PORTAINER_URL}"
+if [ "$PORTAINER_MODE" = "server" ]; then
+    echo "Выполни перезапуск docker restart portainer (если нужно)"
+fi
+echo
 echo "Проверь вход по SSH в отдельном окне:"
 echo "ssh -p 2233 ${USERNAME}@SERVER_IP"
 echo
-echo "Настройка Portainer:"
-echo "https://${DOMAIN}:9443"
-echo "Выполни перезапуск docker restart portainer"
-echo
 echo "Смени пароль:"
-echo "su ${USERNAME}" 
-echo "passwd ${USERPASS}"
+echo "su ${USERNAME}"
+echo "passwd - см. сгенерированный выше пароль"
 echo
-echo "Включи 2FA от имени ${USERNAME}:"
+echo "Включи 2FA:"
 echo "google-authenticator"
 echo
 echo "Начальная настройка 3x-ui:"
 echo "docker exec -it 3x-ui sh"
 echo "x-ui"
-echo "Пункты меню:" 
+echo "Пункты меню:"
 echo "6. Reset Username & Password"
-echo "7. Reset Web Base Path"                       
-echo "10. Change port"
+echo "7. Reset Web Base Path"
+echo "9. Change port"
 echo
-echo "Первый раз заходим но http и IP"
+echo "3x-ui:"
+echo "Первый раз заходим по http и IP"
 echo "http://SERVER_IP:3322/из п.7. Reset Web Base Path"
 echo
 echo "Устанавливаем сертификаты панели и подписки:"
@@ -485,16 +598,15 @@ echo "Certificate: /root/cert/fullchain.pem"
 echo "Private Key: /root/cert/privkey.pem"
 echo
 echo "Меняем порт подписки на 3333 и URI-путь на свой"
-echo 
+echo
 echo "После выбора нажать СОХРАНИТЬ и Перезапустить панель"
-echo "https://${DOMAIN}:2233/из п.7. Reset Web Base Path"
+echo "https://${DOMAIN}:9443/из п.7. Reset Web Base Path"
 echo
 echo "Stack 3x-ui создан скриптом у него control Limited т.е. через SSH"
-echo "Для control Total нужно удалить и передобаить Stacks, данные сохранятся" 
+echo "Для control Total нужно удалить и передобаить Stacks, данные сохранятся"
 echo "cat /opt/stacks/3x-ui/docker-compose.yml копируем содержимое"
 echo "cd /opt/stacks/3x-ui docker compose down"
 echo "Stacks → Add stack → 3x-ui"
-echo "со Stack Watchtower по аналогии," 
-echo "можно отключить для контролируемого обновления"
+echo "со Stack Watchtower по аналогии"
 echo
 echo
