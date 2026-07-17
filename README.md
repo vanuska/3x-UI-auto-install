@@ -94,14 +94,11 @@ sudo systemctl restart ssh.socket
 ```bash
 docker exec -it 3x-ui x-ui
 ```
-Выберите пункты меню: 6. Reset Username & Password, 7. Reset Web Base Path, 10. Change port.
+Выберите пункты меню: 6. Reset Username & Password, 7. Reset Web Base Path, 10. Change port - 3322.
 
-После этого зайдите в панель и укажите сертификаты:
+После этого зайдите в панель и укажите сертификаты для самой панели и для подписки:
 Certificate: /root/cert/fullchain.pem
 Private Key: /root/cert/privkey.pem
-
-Настройте inbound на порту 443 с протоколом VLESS и TLS (используя эти сертификаты).
-Панель будет доступна по https://IP_СЕРВЕРА:3322/ (после смены пути).
 
 3. Portainer
 Если выбран режим сервер → доступен по https://ДОМЕН:9443
@@ -115,12 +112,22 @@ Private Key: /root/cert/privkey.pem
 5. Бэкапы
 Ежедневно в 4:15 создаётся архив /opt/3x-ui/backup/3x-ui-дата.tar.gz.
 Хранятся 14 дней, старые удаляются автоматически.
-Вручную запустить: /opt/3x-ui/backup.sh.
-
-6. Обновление сертификатов
+Вручную запустить:
+```bash
+/opt/3x-ui/backup.sh
+```
+7. Обновление сертификатов
 Каждую ночь в 3:58 выполняется скрипт /usr/local/bin/ssl-renew.sh.
 Если сертификат обновлён, перезапускаются Portainer и 3x-ui.
-Вручную: sudo /usr/local/bin/ssl-renew.sh.
+
+Запуск вручную:
+```bash
+sudo /usr/local/bin/ssl-renew.sh
+```
+
+## Примечание: стек 3x-ui создан с ограниченным через Portainer.io контролем. 
+<br>Для полного управления через Portainer удалите стек через Container и добавьте его заново через интерфейс Portainer - Stacks, скопировав в него содержимое из /opt/stacks/3x-ui/docker-compose.yml. 
+<br>То же самое и для Watchtower.
 
 🛠️ 
 ### Устранение неполадок
@@ -146,15 +153,21 @@ docker logs 3x-ui
 ls -la /opt/portainer-cert/
 docker exec 3x-ui ls -la /root/cert/
 ```
-Ошибки REALITY при подключении клиента
+Ошибки REALITY при подключении клиента:
 - В панели 3x-ui для inbound на порту 443 выберите security: tls (не reality).
-- В клиенте используйте обычный TLS без полей reality.
-- Не открывается Portainer
-- Проверьте контейнер: docker ps -a | grep portainer.
-- Логи: docker logs portainer.
-- Если сертификаты недействительны, обновите их вручную:
+  В клиенте используйте обычный TLS без полей reality.
+- Не открывается Portainer.
+  Проверьте контейнер:
   ```bash
-  /usr/local/bin/ssl-renew.sh.
+  docker ps -a | grep portainer
+  ```
+  Логи:
+  ```bash
+  docker logs portainer
+  ```
+  Если сертификаты недействительны, обновите их вручную:
+  ```bash
+  /usr/local/bin/ssl-renew.sh
   ```
 
 🤝 
