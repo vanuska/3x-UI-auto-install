@@ -135,7 +135,7 @@ EOF
 sysctl -p
 
 ########################################
-# SSH SOCKET (исправлено: используем drop-in)
+# SSH SOCKET
 ########################################
 
 # Создаём drop-in директорию для переопределения порта
@@ -157,7 +157,7 @@ systemctl enable ssh.socket
 systemctl restart ssh.socket
 
 ########################################
-# PAM (без изменений)
+# PAM
 ########################################
 
 cat > /etc/pam.d/sshd << 'EOF'
@@ -170,7 +170,7 @@ account required pam_nologin.so
 EOF
 
 ########################################
-# SSHD (без изменений)
+# SSHD
 ########################################
 
 cat > /etc/ssh/sshd_config << 'EOF'
@@ -193,7 +193,7 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 EOF
 
 ########################################
-# UFW (без изменений)
+# UFW
 ########################################
 
 ufw --force reset
@@ -227,7 +227,7 @@ sshd -t || {
 systemctl restart ssh.socket
 
 ########################################
-# DNS CHECK (без изменений)
+# DNS CHECK
 ########################################
 
 echo "Проверка DNS..."
@@ -249,7 +249,7 @@ fi
 echo "DNS настроен корректно"
 
 ########################################
-# ACME.SH (без изменений)
+# ACME.SH
 ########################################
 
 curl -fsSL https://get.acme.sh | sh
@@ -278,7 +278,7 @@ ufw allow 80/tcp
 ufw deny 80/tcp
 
 ########################################
-# PORTAINER (без изменений)
+# PORTAINER
 ########################################
 
 mkdir -p /opt/stacks/portainer
@@ -313,7 +313,7 @@ cd /opt/stacks/portainer
 docker compose up -d
 
 ########################################
-# WATCHTOWER (без изменений)
+# WATCHTOWER
 ########################################
 
 mkdir -p /opt/stacks/watchtower
@@ -342,7 +342,7 @@ cd /opt/stacks/watchtower
 docker compose up -d
 
 ########################################
-# 3x-ui (без изменений)
+# 3x-ui
 ########################################
 
 mkdir -p /opt/stacks/3x-ui
@@ -372,7 +372,7 @@ cd /opt/stacks/3x-ui
 docker compose up -d
 
 ########################################
-# BACKUP (без изменений)
+# BACKUP
 ########################################
 
 cat > /opt/3x-ui/backup.sh << 'EOF'
@@ -396,7 +396,7 @@ EOF
 chmod +x /opt/3x-ui/backup.sh
 
 ########################################
-# SSL RENEW SCRIPT (без изменений)
+# SSL RENEW
 ########################################
 
 cat > /usr/local/bin/ssl-renew.sh << 'EOF'
@@ -421,7 +421,7 @@ EOF
 chmod +x /usr/local/bin/ssl-renew.sh
 
 ########################################
-# CRON (без изменений)
+# CRON
 ########################################
 
 (
@@ -433,7 +433,7 @@ echo '58 3 * * * /usr/local/bin/ssl-renew.sh >/dev/null 2>&1'
 ) | crontab -
 
 ########################################
-# INFO (без изменений)
+# INFO
 ########################################
 
 echo
@@ -449,6 +449,8 @@ echo "Установка завершена"
 echo "Выполнять по шагам"
 echo "https://github.com/vanuska/3x-UI-auto-install"
 echo "===================================="
+echo
+echo "Backup здесь: /opt/3x-ui/backup"
 echo
 echo "Пользователь: ${USERNAME}"
 echo "Пароль: ${USERPASS}"
