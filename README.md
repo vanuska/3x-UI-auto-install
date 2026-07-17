@@ -85,7 +85,7 @@ passwd
 google-authenticator
 ```
 Следуйте инструкциям, затем перезапустите SSH-сокет:
-```
+```bash
 sudo systemctl restart ssh.socket
 ```
 2. Настройка 3x-ui
@@ -94,9 +94,9 @@ sudo systemctl restart ssh.socket
 ```bash
 docker exec -it 3x-ui x-ui
 ```
-Выберите пункты меню: 6. Reset Username & Password, 7. Reset Web Base Path, 10. Change port - 3322.
+Выберите пункты меню: 6. Reset Username & Password, 7. Reset Web Base Path, 10. Change port - укзать 3322.
 
-После этого зайдите в панель и укажите сертификаты для самой панели и для подписки:
+После этого зайдите в панель и укажите сертификаты для самой панели и для подписок:
 Certificate: /root/cert/fullchain.pem
 Private Key: /root/cert/privkey.pem
 
@@ -107,20 +107,21 @@ Private Key: /root/cert/privkey.pem
 
 4. Watchtower
 Автоматически обновляет контейнеры раз в сутки (интервал 86400 секунд).
-Логи можно посмотреть: docker logs watchtower.
-
-5. Бэкапы
+Логи можно посмотреть:
+```bash
+docker logs watchtower
+```
+6. Бэкапы
 Ежедневно в 4:15 создаётся архив /opt/3x-ui/backup/3x-ui-дата.tar.gz.
 Хранятся 14 дней, старые удаляются автоматически.
-Вручную запустить:
+<br>Запуск вручную:
 ```bash
 /opt/3x-ui/backup.sh
 ```
-7. Обновление сертификатов
+6. Обновление сертификатов
 Каждую ночь в 3:58 выполняется скрипт /usr/local/bin/ssl-renew.sh.
 Если сертификат обновлён, перезапускаются Portainer и 3x-ui.
-
-Запуск вручную:
+<br>Запуск вручную:
 ```bash
 sudo /usr/local/bin/ssl-renew.sh
 ```
