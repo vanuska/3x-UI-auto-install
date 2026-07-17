@@ -135,29 +135,29 @@ EOF
 sysctl -p
 
 ########################################
-# SSH SOCKET
+# SSH SOCKET (исправлено: используем drop-in)
 ########################################
 
-cat > /lib/systemd/system/ssh.socket << 'EOF'
-[Unit]
-Description=OpenBSD Secure Shell server socket
-Before=sockets.target ssh.service
-ConditionPathExists=!/etc/ssh/sshd_not_to_be_run
+# Создаём drop-in директорию для переопределения порта
+mkdir -p /etc/systemd/system/ssh.socket.d
 
+cat > /etc/systemd/system/ssh.socket.d/port.conf << 'EOF'
 [Socket]
+ListenStream=
 ListenStream=0.0.0.0:2233
 ListenStream=[::]:2233
-BindIPv6Only=ipv6-only
-Accept=no
-FreeBind=yes
-
-[Install]
-WantedBy=sockets.target
-RequiredBy=ssh.service
 EOF
 
+# Отключаем стандартный ssh.service, включаем сокет
+systemctl stop ssh 2>/dev/null || true
+systemctl disable ssh 2>/dev/null || true
+
+systemctl daemon-reload
+systemctl enable ssh.socket
+systemctl restart ssh.socket
+
 ########################################
-# PAM
+# PAM 
 ########################################
 
 cat > /etc/pam.d/sshd << 'EOF'
@@ -170,7 +170,7 @@ account required pam_nologin.so
 EOF
 
 ########################################
-# SSHD
+# SSHD 
 ########################################
 
 cat > /etc/ssh/sshd_config << 'EOF'
@@ -193,7 +193,7 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 EOF
 
 ########################################
-# UFW
+# UFW 
 ########################################
 
 ufw --force reset
@@ -212,7 +212,7 @@ ufw deny 80/tcp comment 'ACME'
 ufw --force enable
 
 ########################################
-# SSH RESTART
+# SSH RESTART (дополнительная проверка)
 ########################################
 
 mkdir -p /run/sshd
@@ -223,16 +223,11 @@ sshd -t || {
     exit 1
 }
 
-systemctl stop ssh || true
-systemctl disable ssh || true
-
-systemctl daemon-reload
-
-systemctl enable ssh.socket
+# Перезапускаем сокет ещё раз на всякий случай
 systemctl restart ssh.socket
 
 ########################################
-# DNS CHECK
+# DNS CHECK 
 ########################################
 
 echo "Проверка DNS..."
@@ -252,8 +247,9 @@ if [ "$SERVER_IP" != "$DNS_IP" ]; then
 fi
 
 echo "DNS настроен корректно"
+
 ########################################
-# ACME.SH
+# ACME.SH 
 ########################################
 
 curl -fsSL https://get.acme.sh | sh
@@ -282,7 +278,7 @@ ufw allow 80/tcp
 ufw deny 80/tcp
 
 ########################################
-# PORTAINER
+# PORTAINER 
 ########################################
 
 mkdir -p /opt/stacks/portainer
@@ -317,7 +313,7 @@ cd /opt/stacks/portainer
 docker compose up -d
 
 ########################################
-# WATCHTOWER
+# WATCHTOWER 
 ########################################
 
 mkdir -p /opt/stacks/watchtower
@@ -346,7 +342,7 @@ cd /opt/stacks/watchtower
 docker compose up -d
 
 ########################################
-# 3x-ui
+# 3x-ui 
 ########################################
 
 mkdir -p /opt/stacks/3x-ui
@@ -376,7 +372,7 @@ cd /opt/stacks/3x-ui
 docker compose up -d
 
 ########################################
-# BACKUP
+# BACKUP 
 ########################################
 
 cat > /opt/3x-ui/backup.sh << 'EOF'
@@ -400,7 +396,7 @@ EOF
 chmod +x /opt/3x-ui/backup.sh
 
 ########################################
-# SSL RENEW SCRIPT
+# SSL RENEW SCRIPT 
 ########################################
 
 cat > /usr/local/bin/ssl-renew.sh << 'EOF'
@@ -425,7 +421,7 @@ EOF
 chmod +x /usr/local/bin/ssl-renew.sh
 
 ########################################
-# CRON
+# CRON 
 ########################################
 
 (
@@ -437,7 +433,7 @@ echo '58 3 * * * /usr/local/bin/ssl-renew.sh >/dev/null 2>&1'
 ) | crontab -
 
 ########################################
-# INFO
+# INFO 
 ########################################
 
 echo
@@ -475,13 +471,13 @@ echo "x-ui"
 echo "Пункты меню:" 
 echo "6. Reset Username & Password"
 echo "7. Reset Web Base Path"                       
-echo "10. Change port"
+echo "9. Change port"
 echo
 echo "3x-ui:"
 echo "Первый раз заходим но http и IP"
 echo "http://SERVER_IP:3322/из п.7. Reset Web Base Path"
 echo
-echo "Устанвливаем сертификаты панели и подписки:"
+echo "Устанавливаем сертификаты панели и подписки:"
 echo "Certificate: /root/cert/fullchain.pem"
 echo "Private Key: /root/cert/privkey.pem"
 echo
@@ -490,12 +486,11 @@ echo
 echo "После выбора нажать СОХРАНИТЬ и Перезапустить панель"
 echo "https://${DOMAIN}:9443/из п.7. Reset Web Base Path"
 echo
-echo "Stack 3x-ui создан скриптом у него conrol Limited т.е. через SSH"
+echo "Stack 3x-ui создан скриптом у него control Limited т.е. через SSH"
 echo "Для control Total нужно удалить и передобаить Stacks, данные сохранятся" 
 echo "cat /opt/stacks/3x-ui/docker-compose.yml копируем содержимое"
 echo "cd /opt/stacks/3x-ui docker compose down"
 echo "Stacks → Add stack → 3x-ui"
-echo "cо Stack Watchtower по аналогии"
+echo "со Stack Watchtower по аналогии"
 echo
 echo
-
