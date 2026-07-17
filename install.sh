@@ -157,7 +157,7 @@ systemctl enable ssh.socket
 systemctl restart ssh.socket
 
 ########################################
-# PAM 
+# PAM (без изменений)
 ########################################
 
 cat > /etc/pam.d/sshd << 'EOF'
@@ -170,7 +170,7 @@ account required pam_nologin.so
 EOF
 
 ########################################
-# SSHD 
+# SSHD (без изменений)
 ########################################
 
 cat > /etc/ssh/sshd_config << 'EOF'
@@ -193,7 +193,7 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 EOF
 
 ########################################
-# UFW 
+# UFW (без изменений)
 ########################################
 
 ufw --force reset
@@ -227,7 +227,7 @@ sshd -t || {
 systemctl restart ssh.socket
 
 ########################################
-# DNS CHECK 
+# DNS CHECK (без изменений)
 ########################################
 
 echo "Проверка DNS..."
@@ -249,7 +249,7 @@ fi
 echo "DNS настроен корректно"
 
 ########################################
-# ACME.SH 
+# ACME.SH (без изменений)
 ########################################
 
 curl -fsSL https://get.acme.sh | sh
@@ -278,7 +278,7 @@ ufw allow 80/tcp
 ufw deny 80/tcp
 
 ########################################
-# PORTAINER 
+# PORTAINER (без изменений)
 ########################################
 
 mkdir -p /opt/stacks/portainer
@@ -313,7 +313,7 @@ cd /opt/stacks/portainer
 docker compose up -d
 
 ########################################
-# WATCHTOWER 
+# WATCHTOWER (без изменений)
 ########################################
 
 mkdir -p /opt/stacks/watchtower
@@ -342,7 +342,7 @@ cd /opt/stacks/watchtower
 docker compose up -d
 
 ########################################
-# 3x-ui 
+# 3x-ui (без изменений)
 ########################################
 
 mkdir -p /opt/stacks/3x-ui
@@ -372,7 +372,7 @@ cd /opt/stacks/3x-ui
 docker compose up -d
 
 ########################################
-# BACKUP 
+# BACKUP (без изменений)
 ########################################
 
 cat > /opt/3x-ui/backup.sh << 'EOF'
@@ -396,7 +396,7 @@ EOF
 chmod +x /opt/3x-ui/backup.sh
 
 ########################################
-# SSL RENEW SCRIPT 
+# SSL RENEW SCRIPT (без изменений)
 ########################################
 
 cat > /usr/local/bin/ssl-renew.sh << 'EOF'
@@ -421,7 +421,7 @@ EOF
 chmod +x /usr/local/bin/ssl-renew.sh
 
 ########################################
-# CRON 
+# CRON (без изменений)
 ########################################
 
 (
@@ -433,7 +433,7 @@ echo '58 3 * * * /usr/local/bin/ssl-renew.sh >/dev/null 2>&1'
 ) | crontab -
 
 ########################################
-# INFO 
+# INFO (без изменений)
 ########################################
 
 echo
@@ -446,23 +446,25 @@ echo
 echo
 echo "===================================="
 echo "Установка завершена"
+echo "Выполнять по шагам"
+echo "https://github.com/vanuska/3x-UI-auto-install"
 echo "===================================="
 echo
 echo "Пользователь: ${USERNAME}"
 echo "Пароль: ${USERPASS}"
 echo
-echo "Portainer:"
-echo "https://${DOMAIN}:9443"
-echo "Выполни перезапуск docker restart portainer"
-echo
 echo "Проверь вход по SSH в отдельном окне:"
 echo "ssh -p 2233 ${USERNAME}@SERVER_IP"
 echo
+echo "Настройка Portainer:"
+echo "https://${DOMAIN}:9443"
+echo "Выполни перезапуск docker restart portainer"
+echo
 echo "Смени пароль:"
 echo "su ${USERNAME}" 
-echo "passwd - см. сгенерированный выше пароль"
+echo "passwd ${USERPASS}"
 echo
-echo "Включи 2FA:"
+echo "Включи 2FA от имени ${USERNAME}:"
 echo "google-authenticator"
 echo
 echo "Начальная настройка 3x-ui:"
@@ -471,9 +473,8 @@ echo "x-ui"
 echo "Пункты меню:" 
 echo "6. Reset Username & Password"
 echo "7. Reset Web Base Path"                       
-echo "9. Change port"
+echo "10. Change port"
 echo
-echo "3x-ui:"
 echo "Первый раз заходим но http и IP"
 echo "http://SERVER_IP:3322/из п.7. Reset Web Base Path"
 echo
@@ -484,13 +485,14 @@ echo
 echo "Меняем порт подписки на 3333 и URI-путь на свой"
 echo 
 echo "После выбора нажать СОХРАНИТЬ и Перезапустить панель"
-echo "https://${DOMAIN}:9443/из п.7. Reset Web Base Path"
+echo "https://${DOMAIN}:2233/из п.7. Reset Web Base Path"
 echo
 echo "Stack 3x-ui создан скриптом у него control Limited т.е. через SSH"
 echo "Для control Total нужно удалить и передобаить Stacks, данные сохранятся" 
 echo "cat /opt/stacks/3x-ui/docker-compose.yml копируем содержимое"
 echo "cd /opt/stacks/3x-ui docker compose down"
 echo "Stacks → Add stack → 3x-ui"
-echo "со Stack Watchtower по аналогии"
+echo "со Stack Watchtower по аналогии," 
+echo "можно отключить для контролируемого обновления"
 echo
 echo
