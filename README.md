@@ -1,13 +1,5 @@
 ### Универсальный скрипт установки 3X-UI
 
-
-
-Скачайте и выполните скрипт от root:
-```bash
-wget https://github.com/vanuska/3x-UI-auto-install/install.sh
-chmod +x install.sh
-sudo ./install.sh
-```
 📦 Универсальный установщик сервера с 3x-ui, Portainer и автоматической настройкой
 Этот скрипт полностью автоматизирует развёртывание сервера для работы с 3x-ui (панель управления Xray), Portainer (управление Docker-контейнерами), Watchtower (автообновление контейнеров) и базовой безопасностью.
 
@@ -40,7 +32,7 @@ sudo ./install.sh
 1. Скачайте скрипт на сервер
 Скачайте и выполните скрипт от root:
 ```bash
-wget -O install.sh https://ваш-url/install.sh
+wget -O install.sh https://github.com/vanuska/3x-UI-auto-install/tree/feature/standalone-or-agent-3x-ui/install.sh
 ```
 # или создайте файл вручную и вставьте содержимое
 2. Сделайте исполняемым
