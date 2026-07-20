@@ -90,18 +90,19 @@ sudo systemctl restart ssh.socket
 docker exec -it 3x-ui x-ui
 ```
 Выберите пункты меню: 6. Reset Username & Password, 7. Reset Web Base Path, 10. Change port - укзать 3322.
+
 После этого зайдите в панель и укажите сертификаты для самой панели и для подписок:
-Certificate: /root/cert/fullchain.pem
-Private Key: /root/cert/privkey.pem
+- Certificate: /root/cert/fullchain.pem
+- Private Key: /root/cert/privkey.pem
 
 3. Portainer
-Если выбран режим сервер → доступен по https://ДОМЕН:9443
-Если выбран агент → подключите его в вашем основном Portainer, используя выданный ключ.
-При использовании API или Socket следуйте инструкциям, выведенным в конце установки.
+Если выбран режим сервер → доступен по https://ВАШ_ДОМЕН:9443/.
+<br>Если выбран агент → подключите его в вашем основном Portainer, используя выданный ключ.
+<br>При использовании API или Socket следуйте инструкциям, выведенным в конце установки.
 
 4. Watchtower
 Автоматически обновляет контейнеры раз в сутки (интервал 86400 секунд).
-Логи можно посмотреть:
+<br>Логи можно посмотреть:
 ```bash
 docker logs watchtower
 ```
