@@ -123,12 +123,11 @@ sudo /opt/3x-ui/backup.sh
 ```bash
 sudo /usr/local/bin/ssl-renew.sh
 ```
-## Примечание: стек 3x-ui создан с ограниченным через Portainer.io контролем. 
-<br>Для полного управления через Portainer удалите стек через Container и добавьте его заново через интерфейс Portainer - Stacks, скопировав в него содержимое из /opt/stacks/3x-ui/docker-compose.yml. 
+## Примечание: стек 3x-ui создан с ограниченным контролем через WEB интерфейс Portainer.io. 
+<br>Для нативонго управления через Stacks, скопируйте содержимое из /opt/stacks/3x-ui/docker-compose.yml, далее удалите стек 3х-ui через web интерфейс раздел Containers (не переживайте ничего не потеряется) и добавьте его заново через интерфейс Portainer - Stacks - /opt/stacks/3x-ui/docker-compose.yml.
 <br>То же самое и для Watchtower.
-
 ### Устранение неполадок
-SSH не подключается на порт 2233
+- SSH не подключается на порт 2233
 Проверьте статус сокета:
 ```bash
 sudo systemctl status ssh.socket
@@ -140,7 +139,7 @@ sudo ufw status | grep 2233
 ```
 Если порт снова стал 22 – вероятно, обновление пакета перезаписало системный файл. В данной версии скрипт теперь использует drop-in, поэтому этого не произойдёт.
 
-3x-ui не запускается
+- 3x-ui не запускается
 Проверьте логи:
 ```bash
 sudo docker logs 3x-ui
@@ -150,10 +149,11 @@ sudo docker logs 3x-ui
 sudo ls -la /opt/portainer-cert/
 docker exec 3x-ui ls -la /root/cert/
 ```
-Ошибки REALITY при подключении клиента:
-- В панели 3x-ui для inbound на порту 443 выберите security: tls (не reality).
-  В клиенте используйте обычный TLS без полей reality.
-- Не открывается Portainer.
+- Если сертификаты недействительны, обновите их вручную:
+  ```bash
+  sudo /usr/local/bin/ssl-renew.sh
+  ```
+- Не открывается Portainer
   Проверьте контейнер:
   ```bash
   sudo docker ps -a | grep portainer
@@ -161,10 +161,6 @@ docker exec 3x-ui ls -la /root/cert/
   Логи:
   ```bash
   sudo docker logs portainer
-  ```
-  Если сертификаты недействительны, обновите их вручную:
-  ```bash
-  sudo /usr/local/bin/ssl-renew.sh
   ```
 ### Доработки
 Вы можете дорабатывать скрипт под свои нужды. Предложения и улучшения приветствуются.
