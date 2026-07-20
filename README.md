@@ -35,8 +35,10 @@
 ```bash
 wget -O install.sh https://github.com/vanuska/3x-UI-auto-install/tree/feature/standalone-or-agent-3x-ui/install.sh
 ```
-или создайте файл вручную и вставьте содержимое.
-
+или запустите напрямую:
+```bash
+sudo bash -c "$(curl -fsSL https://github.com/vanuska/3x-UI-auto-install/tree/feature/standalone-or-agent-3x-ui/install.sh)"
+```
 2. Сделайте исполняемым
 ```bash
 chmod +x install.sh
@@ -54,6 +56,7 @@ sudo ./install.sh
 После этого скрипт выполнит все шаги автоматически. 
 Процесс может занять 5–10 минут.
 По окночании, желательно, но не обязаткльно, перезагрузить сервер. 
+Пароль будет сгенерирован автоматически и показан в конце установки.
 
 ## Выбор типа установки Portainer
 Скрипт предлагает 6 вариантов:
