@@ -35,10 +35,6 @@
 ```bash
 wget -O install.sh https://github.com/vanuska/3x-UI-auto-install/tree/feature/standalone-or-agent-3x-ui/install.sh
 ```
-или запустите напрямую:
-```bash
-sudo bash -c "$(curl -fsSL https://github.com/vanuska/3x-UI-auto-install/tree/feature/standalone-or-agent-3x-ui/install.sh)"
-```
 2. Сделайте исполняемым
 ```bash
 chmod +x install.sh
@@ -46,6 +42,10 @@ chmod +x install.sh
 3. Запустите
 ```bash
 sudo ./install.sh
+```
+или запустите напрямую:
+```bash
+sudo bash -c "$(curl -fsSL https://github.com/vanuska/3x-UI-auto-install/tree/feature/standalone-or-agent-3x-ui/install.sh)"
 ```
 4. Следуйте подсказкам
 Вам будет предложено:
